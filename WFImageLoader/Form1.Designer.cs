@@ -49,7 +49,7 @@
             this.btnAdd.TabIndex = 0;
             this.btnAdd.Text = "add";
             this.btnAdd.UseVisualStyleBackColor = true;
-            this.btnAdd.Click += new System.EventHandler(this.button1_Click);
+            this.btnAdd.Click += new System.EventHandler(this.BtnAddClick);
             // 
             // tbAddressToAdd
             // 
@@ -66,7 +66,7 @@
             this.btnSetpFolder.TabIndex = 2;
             this.btnSetpFolder.Text = "setup folder";
             this.btnSetpFolder.UseVisualStyleBackColor = true;
-            this.btnSetpFolder.Click += new System.EventHandler(this.button2_Click);
+            this.btnSetpFolder.Click += new System.EventHandler(this.BtnSetupFolderClick);
             // 
             // tbFolder
             // 

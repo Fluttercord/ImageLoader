@@ -1,98 +1,81 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace WFImageLoader
 {
     public partial class Form1 : Form
     {
-        private string _folder;
-
-        private List<WebsiteImagesDownloader> _queue = new List<WebsiteImagesDownloader>();
-        private WebsiteImagesDownloader _current;
+        private FormVm _vm;
 
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void BtnAddClick(object sender, EventArgs e)
         {
-            var address = tbAddressToAdd.Text;
-            _queue.Add(new WebsiteImagesDownloader(address, _folder));
-            lbQueue.Items.Add(address);
-            Update();
+            _vm?.AddAddress(tbAddressToAdd.Text);
+            RefreshList();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void RefreshList()
         {
-            _folder = tbFolder.Text;
-            Directory.CreateDirectory(_folder);
+            if (_vm != null)
+            {
+                lbQueue.Items.Clear();
+                _vm.Queue.ForEach(item => lbQueue.Items.Add(item));
+            }
+        }
+
+        private void BtnSetupFolderClick(object sender, EventArgs e)
+        {
+            var folder = tbFolder.Text;
+            Directory.CreateDirectory(folder);
+            _vm = new FormVm(folder);
+            _vm.OnProgerss += _vm_OnProgerss;
+            _vm.OnStatusChanged += _vm_OnStatusChanged;
+        }
+
+        private void _vm_OnStatusChanged(FormVm sender, string status)
+        {
+            lblStatus.Text = status;
+            RefreshList();
+        }
+
+        private void _vm_OnProgerss(FormVm sender, int siteProgress, int siteTotal, int totalProgress, int totalTotal)
+        {
+            Invoke(new MethodInvoker(delegate
+            {
+                pbCurrent.Maximum = siteTotal;
+                pbTotal.Maximum = totalTotal;
+                pbCurrent.Value = siteProgress;
+                pbTotal.Value = totalProgress;
+            }));
         }
 
         private void btnResume_Click(object sender, EventArgs e)
         {
-            if (_current != null)
-            {
-                _current.Resume();
-                lblStatus.Text = _current.Address + " in progress";
-            }
+            _vm?.Resume();
         }
 
         private void btnSuspend_Click(object sender, EventArgs e)
         {
-            if (_current != null)
-            {
-                _current.Suspend();
-                lblStatus.Text = _current.Address + " suspended";
-            }
+            _vm?.Suspend();
         }
 
         private void btnRemove_Click(object sender, EventArgs e)
         {
-            var selected =
-                _queue.FirstOrDefault(
-                    item =>
-                        string.Equals(lbQueue.SelectedItem as string, item.Address, StringComparison.InvariantCultureIgnoreCase));
-            if (selected != null)
+            if (_vm != null)
             {
-                _queue.Remove(selected);
-                lbQueue.Items.RemoveAt(lbQueue.SelectedIndex);
-            }
-        }
-
-        private void Update()
-        {
-            if (_current == null)
-            {
-                if (_queue.Count != 0)
+                var selected = lbQueue.SelectedItem as string;
+                if (selected != null)
                 {
-                    _current = _queue[0];
-                    _queue.Remove(_current);
-                    lbQueue.Items.RemoveAt(0);
-                    lblStatus.Text = _current.Address + " in progress";
-                    _current.OnProgress += _current_OnProgress;
-                    _current.Start();
+                    _vm.RemoveAddress(selected);
+                    lbQueue.Items.Remove(selected);
                 }
             }
-        }
-
-        private delegate void InvokeDelegate();
-
-        private void _current_OnProgress(WebsiteImagesDownloader sender, int current, int total)
-        {
-            Invoke(new MethodInvoker(delegate
-            {
-                pbCurrent.Maximum = total;
-                pbCurrent.Value = current;
-                if (total == current)
-                {
-                    _current = null;
-                    Update();
-                }
-            }));
+            RefreshList();
         }
     }
 }
